@@ -50,30 +50,66 @@ movement = function(ofs)
 				
 				--maths (fun 👀)
 				local midx = math.round(#row/2);
-				local midz = math.round(#chosen/2);
+				local midy = math.round(#chosen/2);
+				
 				
 				--loop units !
 				for i,v in pairs(drones:GetChildren()) do
 					--check if placed in pos
 					if v.Name == pos and not v.moved.Value and not placed[g][2] then
 						v.moved.Value = true;
-						placed[g] = {x..','..y, true};
-						--print('('..x..','..y..') placed.');
+						placed[g][2] = true;
 						
+						local finddir = function()
+							local difx = math.abs(x-midx);
+							local dify = math.abs(y-midy);
+							local dirx;
+							local diry;
+							if x-midx < 0 then
+								dirx = 'left';
+							elseif x-midx > 0 then
+								dirx = 'right';
+							end;
+							if y-midy < 0 then
+								diry = 'up'
+							elseif y-midy > 0 then
+								diry = 'down';
+							end;
+							if dirx == nil then
+								dirx,difx = '-',0;
+							end;
+							if diry == nil then
+								diry,dify = '-',0;
+							end;
+							
+							return dirx,difx,diry,dify
+						end;
+						local dirx,difx,diry,dify = finddir();
+						--print('('..x,y..'):',difx,dirx,'|',dify,diry)
 						--placement
-						v.Position = Vector3.new(x,.5,y);
+						local center = Vector3.new(midx,.5,midy)
+						mother.Position = center;
+						if diry == 'up' then
+							dify = -dify;
+							print('switched')
+						elseif dirx == 'left' then
+							difx = -difx;
+						end;
+						v.Position = center + Vector3.new(difx,.5,dify);
 						
+						--print('('..x..','..y..') placed.');
 						
 					end;
 				end;
 			end;
 		end;
 	end;
+	
 	--reset
 	for i,v in pairs(drones:GetChildren()) do
 		v.moved.Value = false;
 	end;
-	--warn(string.rep('-',20))
+	--warn(string.rep('-',20)) --divide output
 end;
 
 while wait() do movement(offset); end;

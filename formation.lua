@@ -1,9 +1,12 @@
+--orrin's brain goes brrrrr
+
 --// General Variables
 mother = workspace.mother;
 drones = workspace.drones;
 choice = workspace.formation;
 
-offset = 5;
+--quick mafs
+sin,cos,pi = math.sin,math.cos,math.pi
 
 formations = {	
 	arrowhead = {
@@ -26,7 +29,47 @@ formations = {
 
 --// Functions
 
-movement = function(ofs)
+finddir = function(x,y,midx,midy)
+	local difx = math.abs(x-midx);
+	local dify = math.abs(y-midy);
+	local dirx;
+	local diry;
+	if x-midx < 0 then
+		dirx = 'left';
+	elseif x-midx > 0 then
+		dirx = 'right';
+	end;
+	if y-midy < 0 then
+		diry = 'up'
+	elseif y-midy > 0 then
+		diry = 'down';
+	end;
+	if dirx == nil then
+		dirx,difx = '-',0;
+	end;
+	if diry == nil then
+		diry,dify = '-',0;
+	end;
+
+	return dirx,difx,diry,dify
+end;
+
+rotate = function(part,offset,center,difx,dify)
+	local angle = workspace.angle.Value;
+	local rot = (angle*(pi/2))/90;
+	difx = difx;
+	dify = dify;
+	part.CFrame =
+		CFrame.new(
+			sin(rot)*offset,0,
+			cos(rot)*offset
+		)
+		+ center.Position + Vector3.new(difx*offset,.5,dify*offset);
+	--]]
+end;
+
+movement = function()
+	local offset = workspace.offset.Value;
 	local g;
 	local placed = {};
 	local chosen = formations[choice.Value];
@@ -48,7 +91,7 @@ movement = function(ofs)
 					placed[g] = {x..','..y, false};
 				end;
 				
-				--maths (fun 👀)
+				--mafs (fun 👀)
 				local midx = math.round(#row/2);
 				local midy = math.round(#chosen/2);
 				
@@ -60,45 +103,17 @@ movement = function(ofs)
 						v.moved.Value = true;
 						placed[g][2] = true;
 						
-						local finddir = function()
-							local difx = math.abs(x-midx);
-							local dify = math.abs(y-midy);
-							local dirx;
-							local diry;
-							if x-midx < 0 then
-								dirx = 'left';
-							elseif x-midx > 0 then
-								dirx = 'right';
-							end;
-							if y-midy < 0 then
-								diry = 'up'
-							elseif y-midy > 0 then
-								diry = 'down';
-							end;
-							if dirx == nil then
-								dirx,difx = '-',0;
-							end;
-							if diry == nil then
-								diry,dify = '-',0;
-							end;
-							
-							return dirx,difx,diry,dify
-						end;
-						local dirx,difx,diry,dify = finddir();
+						local dirx,difx,diry,dify = finddir(x,y,midx,midy);
 						--print('('..x,y..'):',difx,dirx,'|',dify,diry)
 						--placement
-						local center = Vector3.new(midx,.5,midy)
-						mother.Position = center;
+						local center = mother.CFrame;
 						if diry == 'up' then
 							dify = -dify;
-							print('switched')
 						elseif dirx == 'left' then
 							difx = -difx;
 						end;
-						v.Position = center + Vector3.new(difx,.5,dify);
-						
-						--print('('..x..','..y..') placed.');
-						
+						rotate(v,offset,center,difx,dify);
+						--print('placed'..)
 					end;
 				end;
 			end;
@@ -112,4 +127,4 @@ movement = function(ofs)
 	--warn(string.rep('-',20)) --divide output
 end;
 
-while wait() do movement(offset); end;
+while wait() do movement(); end;

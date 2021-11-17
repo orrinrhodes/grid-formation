@@ -1,33 +1,70 @@
---orrin's brain goes brrrrr
+--orrin's brain goes brrrr
 
 --// General Variables
-mother = workspace.mother;
-drones = workspace.drones;
-choice = workspace.formation;
+replicatedstorage	=	game:GetService('ReplicatedStorage');
+squad				=	replicatedstorage.squad;
+units				=	workspace.units;
+visual				=	workspace.visual;
 
+config				=	workspace.config;
 --quick mafs
-sin,cos,pi = math.sin,math.cos,math.pi
+sin,cos,abs,round,pi,rad = math.sin,math.cos,math.rad,math.round,math.pi,math.rad;
 
-formations = {	
-	arrowhead = {
+--|| Ranks
+ranks = {
+	general = {
+		name		=	'General';
+		description	=	'Highest rank';
+		tier		=	1;
+		color		=	Color3.fromRGB(16, 60, 127);
+	};
+	officer = {
+		name		=	'Officer';
+		description	=	'Second-highest rank';
+		tier		=	2;
+		color		=	Color3.fromRGB(255, 237, 94);
+	};
+	unit = {
+		name		=	'Unit';
+		description	=	'Lowest possible rank.';
+		tier		=	3;
+		color		=	Color3.fromRGB(85, 38, 38);
+	};
+};
+
+
+--|| Formations
+formations = {
+	
+	arrowhead	= {
 		'__1__';
 		'_2_2_';
 		'3___3';
 	};
-
-	column = {
+	
+	column		= {
 		'1';
 		'2';
 		'2';
 		'3';
 		'3';
 	};
+	
+	rowl		= {
+		'12233';
+	};
+	
+	rowr		= {
+		'33221';
+	};
+	
 };
 
 --rotate around CENTER:
 --column/certain formations would look funky when orbiting leader.
 
 --// Functions
+
 
 finddir = function(x,y,midx,midy)
 	local difx = math.abs(x-midx);
@@ -54,30 +91,49 @@ finddir = function(x,y,midx,midy)
 	return dirx,difx,diry,dify
 end;
 
-rotate = function(part,offset,center,difx,dify)
-	local angle = workspace.angle.Value;
-	local rot = (angle*(pi/2))/90;
-	difx = difx;
-	dify = dify;
+rotate = function(part,center,difx,dify)
+	local angle = config.angle.Value;
+	local offset = config.offset.Value;
+	--restrict to only Y axis
+	local crX, crY = center.CFrame:ToOrientation();
 	part.CFrame =
-		CFrame.new(
-			sin(rot)*offset,0,
-			cos(rot)*offset
-		)
-		+ center.Position + Vector3.new(difx*offset,.5,dify*offset);
-	--]]
+		CFrame.new(center.CFrame.Position)
+		* CFrame.Angles(0,crY,0)
+		--offset
+		* CFrame.new(difx*offset,.5,dify*offset);
+	
+	return part.Position;
 end;
 
-movement = function()
-	local offset = workspace.offset.Value;
+choose = function(squad)
+	for i,unit in pairs(squad:GetChildren()) do
+		if unit:FindFirstChild('Humanoid') then
+			local moved = unit.config.moved;
+			if not moved.Value then
+				moved.Value = true;
+
+				--[[
+					sorting by tier
+					then return
+				]]
+
+
+				return unit;
+			end;
+		end;
+	end;
+end;
+
+movemnt = function(squad)
 	local g;
 	local placed = {};
-	local chosen = formations[choice.Value];
-	--run through array, find unit positions
+	local count = 0;
+	local chosen = formations[squad.formation.Value];
 	for y,row in pairs(chosen) do
 		for x=1,#row do
 			local pos = string.sub(row,x,x);
 			if pos ~= '_' then
+				--print(pos,': ('..x..','..y..')');
 				
 				--sometimes #row is > #columns: account for all units
 				if #row > #chosen then
@@ -92,39 +148,96 @@ movement = function()
 				end;
 				
 				--mafs (fun 👀)
-				local midx = math.round(#row/2);
-				local midy = math.round(#chosen/2);
+				local midx = round(#row/2);
+				local midy = round(#chosen/2);
 				
+				--local unit = choose(squad);
 				
 				--loop units !
-				for i,v in pairs(drones:GetChildren()) do
-					--check if placed in pos
-					if v.Name == pos and not v.moved.Value and not placed[g][2] then
-						v.moved.Value = true;
+				for i,unit in pairs(squad:GetChildren()) do
+					--check if unit and placed in pos
+					if unit.Name == pos and not unit.config.moved.Value and not placed[g][2] then
+						count += 1;
+						unit.config.moved.Value = true;
 						placed[g][2] = true;
 						
 						local dirx,difx,diry,dify = finddir(x,y,midx,midy);
 						--print('('..x,y..'):',difx,dirx,'|',dify,diry)
 						--placement
-						local center = mother.CFrame;
 						if diry == 'up' then
 							dify = -dify;
 						elseif dirx == 'left' then
 							difx = -difx;
 						end;
-						rotate(v,offset,center,difx,dify);
-						--print('placed'..)
+						
+						local dest = rotate(visual:GetChildren()[count],squad.center,difx,dify);
+						unit:FindFirstChild('Humanoid'):MoveTo(dest);
 					end;
 				end;
+				
 			end;
 		end;
 	end;
-	
 	--reset
-	for i,v in pairs(drones:GetChildren()) do
-		v.moved.Value = false;
+	for i,unit in pairs(squad:GetChildren()) do
+		if unit:FindFirstChild('config') then
+			unit.config.moved.Value = false;
+		end;
 	end;
 	--warn(string.rep('-',20)) --divide output
 end;
 
-while wait() do movement(); end;
+newunit = function(squad,rank)
+	local part = Instance.new('Part',visual);
+	part.Anchored = true;
+	part.CanCollide = false;
+	part.Transparency = 1/3;
+	part.Size = Vector3.new(1,1,1);
+	
+	local unit = replicatedstorage.dummy:Clone();
+	unit.Parent = squad;
+	unit.Name = rank.tier;
+	unit.config.tier.Value = rank.tier;
+	unit['Body Colors'].TorsoColor3 = rank.color; --individual unit customization later
+	return unit;
+end;
+
+newsquad = function(name)
+	local center = Instance.new('Part',squad);
+	center.Anchored = true;
+	center.CanCollide = false;
+	center.Name = 'center';
+	center.Transparency = 1/3;
+	center.Position = Vector3.new(0,8,0);
+	center.Size = Vector3.new(1,3,1);
+	
+	local newsquad = squad:Clone();
+	local quantity = 1;
+	for i,v in pairs(units:GetChildren()) do	
+		if string.find(tostring(v),name) then
+			quantity += 1;
+		end;
+	end;
+	if quantity > 1 then
+		warn('Name already exists, adding number.');
+		newsquad.Name = (name..' ['..quantity..']');
+	else
+		newsquad.Name = name;
+	end;
+	
+	local gen = newunit(newsquad,ranks.general);
+	gen.config.main.Value = true;
+	local of1 = newunit(newsquad,ranks.officer);
+	local of2 = newunit(newsquad,ranks.officer);
+	local un1 = newunit(newsquad,ranks.unit);
+	local un2 = newunit(newsquad,ranks.unit);
+	
+	newsquad.Parent = units;
+	return newsquad;
+end;
+
+roaches = newsquad('Roaches');
+
+while wait() do
+	movemnt(roaches);
+end;

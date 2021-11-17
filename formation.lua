@@ -1,12 +1,12 @@
---orrin's brain goes brrrr
-
 --// General Variables
 replicatedstorage	=	game:GetService('ReplicatedStorage');
 squad				=	replicatedstorage.squad;
 units				=	workspace.units;
 visual				=	workspace.visual;
-
 config				=	workspace.config;
+
+squads = {};
+
 --quick mafs
 sin,cos,abs,round,pi,rad = math.sin,math.cos,math.rad,math.round,math.pi,math.rad;
 
@@ -124,7 +124,7 @@ choose = function(squad)
 	end;
 end;
 
-movemnt = function(squad)
+movement = function(squad)
 	local g;
 	local placed = {};
 	local count = 0;
@@ -188,29 +188,22 @@ movemnt = function(squad)
 end;
 
 newunit = function(squad,rank)
+	local unit = replicatedstorage.dummy:Clone();
+	unit.Parent = squad;
+	unit.Name = rank.tier;
+	unit.config.tier.Value = rank.tier;
+	unit['Body Colors'].TorsoColor3 = rank.color; --individual unit customization later
+	
 	local part = Instance.new('Part',visual);
 	part.Anchored = true;
 	part.CanCollide = false;
 	part.Transparency = 1/3;
 	part.Size = Vector3.new(1,1,1);
 	
-	local unit = replicatedstorage.dummy:Clone();
-	unit.Parent = squad;
-	unit.Name = rank.tier;
-	unit.config.tier.Value = rank.tier;
-	unit['Body Colors'].TorsoColor3 = rank.color; --individual unit customization later
 	return unit;
 end;
 
 newsquad = function(name)
-	local center = Instance.new('Part',squad);
-	center.Anchored = true;
-	center.CanCollide = false;
-	center.Name = 'center';
-	center.Transparency = 1/3;
-	center.Position = Vector3.new(0,8,0);
-	center.Size = Vector3.new(1,3,1);
-	
 	local newsquad = squad:Clone();
 	local quantity = 1;
 	for i,v in pairs(units:GetChildren()) do	
@@ -233,11 +226,27 @@ newsquad = function(name)
 	local un2 = newunit(newsquad,ranks.unit);
 	
 	newsquad.Parent = units;
+	table.insert(squads,newsquad);
+	print(newsquad,'created')
+	
+	local center = Instance.new('Part',newsquad);
+	center.Anchored = true;
+	center.CanCollide = false;
+	center.Name = 'center';
+	center.Transparency = 1/3;
+	center.Position = Vector3.new(0,8,0);
+	center.Size = Vector3.new(1,3,1);
+	
 	return newsquad;
 end;
 
 roaches = newsquad('Roaches');
+roaches = newsquad('Roaches');
+roaches = newsquad('Crickets');
 
+print('Squads:\n',squads);
 while wait() do
-	movemnt(roaches);
+	for i,v in pairs(squads) do
+		movement(v);
+	end;
 end;

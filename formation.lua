@@ -1,8 +1,9 @@
+--orrin's brain goes brrrr
+
 --// General Variables
 replicatedstorage	=	game:GetService('ReplicatedStorage');
-squad				=	replicatedstorage.squad;
+rssquad				=	replicatedstorage.squad;
 units				=	workspace.units;
-visual				=	workspace.visual;
 config				=	workspace.config;
 
 squads = {};
@@ -169,7 +170,7 @@ movement = function(squad)
 						elseif dirx == 'left' then
 							difx = -difx;
 						end;
-						
+						local visual = squad.visual;
 						local dest = rotate(visual:GetChildren()[count],squad.center,difx,dify);
 						unit:FindFirstChild('Humanoid'):MoveTo(dest);
 					end;
@@ -194,17 +195,19 @@ newunit = function(squad,rank)
 	unit.config.tier.Value = rank.tier;
 	unit['Body Colors'].TorsoColor3 = rank.color; --individual unit customization later
 	
-	local part = Instance.new('Part',visual);
+	local part = Instance.new('Part',squad.visual);
+	print(part.Parent.Name)
 	part.Anchored = true;
 	part.CanCollide = false;
-	part.Transparency = 1/3;
-	part.Size = Vector3.new(1,1,1);
+	part.BrickColor = BrickColor.Red();
+	part.Transparency = 2/3;
+	part.Size = Vector3.new(2,1,2);
 	
 	return unit;
 end;
 
 newsquad = function(name)
-	local newsquad = squad:Clone();
+	local newsquad = rssquad:Clone();
 	local quantity = 1;
 	for i,v in pairs(units:GetChildren()) do	
 		if string.find(tostring(v),name) then
@@ -218,6 +221,17 @@ newsquad = function(name)
 		newsquad.Name = name;
 	end;
 	
+	local visual = Instance.new('Folder',newsquad);
+	visual.Name = 'visual';
+
+	local center = Instance.new('Part',newsquad);
+	center.Anchored = true;
+	center.CanCollide = false;
+	center.Name = 'center';
+	center.Transparency = 1/3;
+	center.Position = Vector3.new(0,2,0);
+	center.Size = Vector3.new(1,3,1);
+	
 	local gen = newunit(newsquad,ranks.general);
 	gen.config.main.Value = true;
 	local of1 = newunit(newsquad,ranks.officer);
@@ -228,14 +242,6 @@ newsquad = function(name)
 	newsquad.Parent = units;
 	table.insert(squads,newsquad);
 	print(newsquad,'created')
-	
-	local center = Instance.new('Part',newsquad);
-	center.Anchored = true;
-	center.CanCollide = false;
-	center.Name = 'center';
-	center.Transparency = 1/3;
-	center.Position = Vector3.new(0,8,0);
-	center.Size = Vector3.new(1,3,1);
 	
 	return newsquad;
 end;
